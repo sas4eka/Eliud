@@ -1,0 +1,2 @@
+cd ~/coding/ahc042
+./a.out </dev/stdin
