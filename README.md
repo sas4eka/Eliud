@@ -5,6 +5,7 @@ This system runs your solutions against a set of tests and displays the results 
 ## Folder Structure
 
 - **solutions/** — Place your compiled solution binaries here.
+- **source/** — Place your C++ source files here (`.cpp` extension).
 - **tests/** — Place your test files (with a `.txt` extension) here.
 - **results/** — CSV files with test results are saved here automatically.
 
@@ -12,10 +13,12 @@ This system runs your solutions against a set of tests and displays the results 
 
 1. **Runner**
     - Executes a specified solution on all test files.
+    - If a binary doesn't exist in **solutions/**, checks for corresponding source in **source/** and compiles it.
     - Reads the solution's stderr for lines like `Score = ...` and `Time = ... ms`.
     - Writes the results to a CSV file in the **results/** folder.
     - **Run Example:**  
-      `java Runner solutionName.exe`
+      `java Runner solutionName`  
+      (will look for solutionName.cpp if binary not found)
 
 2. **Web Server**
     - Reads all CSV files from the **results/** folder.
@@ -25,9 +28,11 @@ This system runs your solutions against a set of tests and displays the results 
 ## Quick Usage
 
 1. Add your test files to **tests/**.
-2. Add your solution binaries to **solutions/**.
+2. Either:
+   - Add your solution binaries to **solutions/**, or
+   - Add your C++ source files to **source/**.
 3. Run the Runner to generate results:  
-   `java Runner solutionName.exe`
+   `java Runner solutionName`
 4. Start the Web Server:  
    `java WebServer`
 5. Open [http://localhost:8080](http://localhost:8080) in your browser to view the dashboard.
@@ -37,7 +42,7 @@ This system runs your solutions against a set of tests and displays the results 
 This project includes several shell scripts to facilitate building and running the application:
 
 - **`build.sh`**: Compiles the Java source files and prepares the output directory.
-- **`run.sh`**: Executes the specified solution against the test files.
+- **`run.sh`**: Executes the specified solution against the test files. If binary not found, attempts to compile from C++ source.
 - **`start_web_server.sh`**: Launches the web server to display the results dashboard.
 
 You can run these scripts from the command line to streamline your workflow.
