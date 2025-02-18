@@ -1,11 +1,3 @@
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -18,6 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 
 public class WebServer {
     public static void main(String[] args) throws Exception {
@@ -35,7 +34,8 @@ public class WebServer {
         private static final String RESULTS_DIR = "results";
 
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
             String mode = req.getParameter("mode");
             if (mode == null || (!mode.equals("min") && !mode.equals("max"))) {
                 mode = "max";
@@ -44,12 +44,15 @@ public class WebServer {
             PrintWriter out = resp.getWriter();
             File resultsDir = new File(RESULTS_DIR);
             if (!resultsDir.exists() || !resultsDir.isDirectory()) {
-                out.println("<html><head><title>Results Dashboard</title></head><body><h3>No results directory found.</h3></body></html>");
+                out.println("<html><head><title>Results Dashboard</title></head><body><h3>No "
+                    + "results directory found.</h3></body></html>");
                 return;
             }
             File[] solutionFiles = resultsDir.listFiles((dir, name) -> name.endsWith(".csv"));
             if (solutionFiles == null || solutionFiles.length == 0) {
-                out.println("<html><head><title>Results Dashboard</title></head><body><h3>No solution result files found. Please run a solution.</h3></body></html>");
+                out.println(
+                    "<html><head><title>Results Dashboard</title></head><body><h3>No solution "
+                    + "result files found. Please run a solution.</h3></body></html>");
                 return;
             }
             class TestRecord {
@@ -124,6 +127,7 @@ public class WebServer {
             Map<String, Long> solutionAvgTimes = new HashMap<>();
             Map<String, Long> solutionMaxTimes = new HashMap<>();
             Map<String, Integer> solutionBestCounts = new HashMap<>();
+            Map<String, Integer> solutionUniqueBestCounts = new HashMap<>();
             for (Map.Entry<String, Map<String, TestRecord>> entry : solutionData.entrySet()) {
                 String sol = entry.getKey();
                 Map<String, TestRecord> testMap = entry.getValue();
@@ -132,6 +136,7 @@ public class WebServer {
                 long totalTime = 0;
                 long maxTime = 0;
                 int bestCount = 0;
+                int uniqueBestCount = 0;
                 Map<String, Double> normMap = new HashMap<>();
                 String latestTimestamp = "";
                 for (String test : allTestNames) {
@@ -159,6 +164,34 @@ public class WebServer {
                         count++;
                         if (Math.abs(norm - 100.0) < 1e-6) {
                             bestCount++;
+                            boolean isUnique = true;
+                            for (Map.Entry<String, Map<String, TestRecord>> otherEntry :
+                                solutionData.entrySet()) {
+                                if (otherEntry.getKey().equals(sol))
+                                    continue;
+                                TestRecord otherRec = otherEntry.getValue().get(test);
+                                if (otherRec != null) {
+                                    double otherNorm;
+                                    if (mode.equals("max")) {
+                                        otherNorm =
+                                            (best > 0) ? (otherRec.rawScore / best) * 100 : 0;
+                                    } else {
+                                        if (otherRec.rawScore == 0) {
+                                            otherNorm = 100.0;
+                                        } else {
+                                            otherNorm =
+                                                (best > 0) ? (best / otherRec.rawScore) * 100 : 0;
+                                        }
+                                    }
+                                    if (Math.abs(otherNorm - 100.0) < 1e-6) {
+                                        isUnique = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (isUnique) {
+                                uniqueBestCount++;
+                            }
                         }
                     } else {
                         norm = Double.NaN;
@@ -174,15 +207,22 @@ public class WebServer {
                 solutionAvgTimes.put(sol, avgTime);
                 solutionMaxTimes.put(sol, maxTime);
                 solutionBestCounts.put(sol, bestCount);
+                solutionUniqueBestCounts.put(sol, uniqueBestCount);
             }
             List<String> sortedSolutions = new ArrayList<>(solutionData.keySet());
-            Collections.sort(sortedSolutions, (s1, s2) -> Double.compare(solutionAverages.get(s2), solutionAverages.get(s1)));
+            Collections.sort(sortedSolutions,
+                (s1, s2) -> Double.compare(solutionAverages.get(s2), solutionAverages.get(s1)));
             out.println("<html>");
             out.println("<head>");
             out.println("<title>Results Dashboard</title>");
-            out.println("<link href='https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap' rel='stylesheet'>");
-            out.println("<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css'>");
-            out.println("<style>td, th { white-space: nowrap; text-align: center; font-family: 'Roboto Mono', monospace; }</style>");
+            out.println(
+                "<link href='https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap' "
+                + "rel='stylesheet'>");
+            out.println("<link rel='stylesheet' "
+                + "href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/"
+                + "bootstrap.min.css'>");
+            out.println("<style>td, th { white-space: nowrap; text-align: center; font-family: "
+                + "'Roboto Mono', monospace; }</style>");
             out.println("</head>");
             out.println("<body>");
             out.println("<div class='container mt-4'>");
@@ -190,8 +230,10 @@ public class WebServer {
             out.println("<form method='GET'>");
             out.println("<label>Task Type: </label>");
             out.println("<select name='mode' onchange='this.form.submit();'>");
-            out.println("<option value='max'" + (mode.equals("max") ? " selected" : "") + ">Maximization</option>");
-            out.println("<option value='min'" + (mode.equals("min") ? " selected" : "") + ">Minimization</option>");
+            out.println("<option value='max'" + (mode.equals("max") ? " selected" : "")
+                + ">Maximization</option>");
+            out.println("<option value='min'" + (mode.equals("min") ? " selected" : "")
+                + ">Minimization</option>");
             out.println("</select>");
             out.println("</form>");
             out.println("<table class='table table-bordered table-striped'>");
@@ -203,6 +245,7 @@ public class WebServer {
             out.println("<th class='num'>Score</th>");
             out.println("<th class='num'>Tests</th>");
             out.println("<th class='num'>Best</th>");
+            out.println("<th class='num'>Uniq</th>");
             for (String test : allTestNames) {
                 String displayTest = test;
                 if (displayTest.endsWith(".txt")) {
@@ -218,8 +261,10 @@ public class WebServer {
                 out.println("<td>" + sol + "</td>");
                 long avgTime = solutionAvgTimes.get(sol);
                 long maxTime = solutionMaxTimes.get(sol);
-                out.println("<td class='num'>" + avgTime + " ms" + "</td>");
-                out.println("<td class='num'>" + maxTime + " ms" + "</td>");
+                out.println("<td class='num'>" + avgTime + " ms"
+                    + "</td>");
+                out.println("<td class='num'>" + maxTime + " ms"
+                    + "</td>");
                 double avg = solutionAverages.get(sol);
                 String avgDisplay = String.format("%.4f", avg);
                 out.println("<td class='num'>" + avgDisplay + "</td>");
@@ -227,13 +272,16 @@ public class WebServer {
                 out.println("<td class='num'>" + testsCount + "</td>");
                 int bestCount = solutionBestCounts.get(sol);
                 out.println("<td class='num'>" + bestCount + "</td>");
+                int uniqueBestCount = solutionUniqueBestCounts.get(sol);
+                out.println("<td class='num'>" + uniqueBestCount + "</td>");
                 Map<String, Double> normMap = solutionNormalized.get(sol);
                 for (String test : allTestNames) {
                     double norm = normMap.getOrDefault(test, Double.NaN);
                     TestRecord rec = solutionData.get(sol).get(test);
                     String tooltip = "";
                     if (rec != null) {
-                        tooltip = " title='Score: " + String.format("%.2f", rec.rawScore) + "\nTime: " + rec.execTime + " ms'";
+                        tooltip = " title='Score: " + String.format("%.2f", rec.rawScore)
+                            + "\nTime: " + rec.execTime + " ms'";
                     }
                     if (Double.isNaN(norm)) {
                         out.println("<td class='num'" + tooltip + ">-</td>");
@@ -243,7 +291,8 @@ public class WebServer {
                         if (Math.abs(norm - 100.0) < 1e-6) {
                             cellStyle = " style='background-color:#90EE90;'";
                         }
-                        out.println("<td class='num'" + cellStyle + tooltip + ">" + normDisplay + "</td>");
+                        out.println(
+                            "<td class='num'" + cellStyle + tooltip + ">" + normDisplay + "</td>");
                     }
                 }
                 out.println("</tr>");
