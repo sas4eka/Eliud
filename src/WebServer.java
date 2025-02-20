@@ -290,6 +290,8 @@ public class WebServer {
                         String cellStyle = "";
                         if (Math.abs(norm - 100.0) < 1e-6) {
                             cellStyle = " style='background-color:#90EE90;'";
+                        } else if (norm < 95.0) {
+                            cellStyle = " style='background-color:#FFB6B6;'";
                         }
                         out.println(
                             "<td class='num'" + cellStyle + tooltip + ">" + normDisplay + "</td>");
