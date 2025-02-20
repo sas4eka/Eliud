@@ -44,5 +44,6 @@ This project includes several shell scripts to facilitate building and running t
 - **`build.sh`**: Compiles the Java source files and prepares the output directory.
 - **`run.sh`**: Executes the specified solution against the test files. If binary not found, attempts to compile from C++ source.
 - **`start_web_server.sh`**: Launches the web server to display the results dashboard.
+- **`wipe.sh`**: Cleans up artifacts (binary, source, and results) for a specified solution.
 
 You can run these scripts from the command line to streamline your workflow.
