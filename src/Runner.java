@@ -20,6 +20,7 @@ public class Runner {
     }
 
     private static final boolean AHC_MODE = false;
+    private static final boolean TC_MODE = false;
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -98,6 +99,40 @@ public class Runner {
                     } else {
                         System.err.println("No score output from visualizer on " + testName);
                         tr.rawScore = 0;
+                    }
+                } else if (TC_MODE) {
+                    int testNumber = Integer.parseInt(testName.replaceAll("[^0-9]", ""));
+                    ProcessBuilder pb = new ProcessBuilder("java", "-jar", "tester.jar", "-exec",
+                        solutionFile.getAbsolutePath(), "-seed", String.valueOf(testNumber),
+                        "-novis");
+
+                    long startTime = System.currentTimeMillis();
+                    Process process = pb.start();
+
+                    BufferedReader errReader =
+                        new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    String scoreLine = null;
+                    String timeLine = null;
+                    String line;
+                    while ((line = errReader.readLine()) != null) {
+                        String trimmed = line.trim();
+                        if (trimmed.startsWith("Score =")) {
+                            scoreLine = trimmed;
+                        } else if (trimmed.startsWith("Time =")) {
+                            timeLine = trimmed;
+                        }
+                    }
+
+                    process.waitFor();
+                    long endTime = System.currentTimeMillis();
+                    long measuredTime = endTime - startTime;
+
+                    tr.execTime = parseTimeOutput(timeLine, measuredTime);
+                    tr.rawScore = parseScoreOutput(scoreLine);
+
+                    if (scoreLine == null) {
+                        System.err.println(
+                            "No score output from " + solutionName + " on " + testName);
                     }
                 } else {
                     ProcessBuilder pb = new ProcessBuilder(solutionFile.getAbsolutePath());
