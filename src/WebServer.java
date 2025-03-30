@@ -110,7 +110,7 @@ public class WebServer {
                     double best = Double.POSITIVE_INFINITY;
                     for (Map<String, TestRecord> testMap : solutionData.values()) {
                         TestRecord rec = testMap.get(testName);
-                        if (rec != null && rec.rawScore < best) {
+                        if (rec != null && rec.rawScore > 0 && rec.rawScore < best) {
                             best = rec.rawScore;
                         }
                     }
@@ -148,7 +148,7 @@ public class WebServer {
                             norm = (best > 0) ? (rec.rawScore / best) * 100 : 0;
                         } else {
                             if (rec.rawScore == 0) {
-                                norm = 100.0;
+                                norm = 0.0;
                             } else {
                                 norm = (best > 0) ? (best / rec.rawScore) * 100 : 0;
                             }
