@@ -4,3 +4,5 @@ out/
 .DS_Store
 a.out
 running.txt
+tools/target
+tools/vis.html
