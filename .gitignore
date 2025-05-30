@@ -3,6 +3,7 @@ out/
 *.iml
 .DS_Store
 a.out
+out.txt
 running.txt
 tools/target
 tools/vis.html
