@@ -13,7 +13,7 @@ SOURCE_PATH="source/${SOLUTION_NAME}.cpp"
 # First check for source file
 if [ -f "$SOURCE_PATH" ]; then
     echo "Source file found. Compiling: $SOURCE_PATH"
-    g++-14 -O2 -std=c++17 "$SOURCE_PATH" -o "${BINARY_PATH}"
+    g++ -O2 -std=c++17 "$SOURCE_PATH" -o "${BINARY_PATH}"
     if [ $? -ne 0 ]; then
         echo "Compilation failed!"
         exit 1
