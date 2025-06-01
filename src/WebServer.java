@@ -128,6 +128,7 @@ public class WebServer {
             Map<String, Long> solutionMaxTimes = new HashMap<>();
             Map<String, Integer> solutionBestCounts = new HashMap<>();
             Map<String, Integer> solutionUniqueBestCounts = new HashMap<>();
+            Map<String, int[]> solutionHistograms = new HashMap<>();
             for (Map.Entry<String, Map<String, TestRecord>> entry : solutionData.entrySet()) {
                 String sol = entry.getKey();
                 Map<String, TestRecord> testMap = entry.getValue();
@@ -139,6 +140,7 @@ public class WebServer {
                 int uniqueBestCount = 0;
                 Map<String, Double> normMap = new HashMap<>();
                 String latestTimestamp = "";
+                int[] histogram = new int[100];
                 for (String test : allTestNames) {
                     TestRecord rec = testMap.get(test);
                     double norm;
@@ -162,6 +164,10 @@ public class WebServer {
                         }
                         sumNorm += norm;
                         count++;
+
+                        int bucket = Math.min(99, Math.max(0, (int) norm));
+                        histogram[bucket]++;
+
                         if (Math.abs(norm - 100.0) < 1e-6) {
                             bestCount++;
                             boolean isUnique = true;
@@ -208,6 +214,7 @@ public class WebServer {
                 solutionMaxTimes.put(sol, maxTime);
                 solutionBestCounts.put(sol, bestCount);
                 solutionUniqueBestCounts.put(sol, uniqueBestCount);
+                solutionHistograms.put(sol, histogram);
             }
             List<String> sortedSolutions = new ArrayList<>(solutionData.keySet());
             Collections.sort(sortedSolutions,
@@ -221,8 +228,17 @@ public class WebServer {
             out.println("<link rel='stylesheet' "
                 + "href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/"
                 + "bootstrap.min.css'>");
-            out.println("<style>td, th { white-space: nowrap; text-align: center; font-family: "
-                + "'Roboto Mono', monospace; }</style>");
+            out.println("<style>");
+            out.println("td, th { white-space: nowrap; text-align: center; font-family: 'Roboto "
+                + "Mono', monospace; }");
+            out.println(".histogram { width: 200px; height: 30px; position: relative; border: 1px "
+                + "solid #ccc; background: linear-gradient(to right, #ff6b6b 0%, #ffd93d "
+                + "50%, #6bcf7f 100%); }");
+            out.println(".histogram-bar { display: inline-block; width: 2px; margin: 0; "
+                + "vertical-align: bottom; background-color: rgba(0,0,0,0.7); }");
+            out.println(".histogram-container { display: flex; align-items: end; height: 30px; "
+                + "width: 200px; padding: 2px; }");
+            out.println("</style>");
             out.println("</head>");
             out.println("<body>");
             out.println("<div class='container mt-4'>");
@@ -240,6 +256,7 @@ public class WebServer {
             out.println("<thead><tr>");
             out.println("<th>Timestamp</th>");
             out.println("<th>Solution</th>");
+            out.println("<th>Histogram</th>");
             out.println("<th class='num'>Avg Time</th>");
             out.println("<th class='num'>Max Time</th>");
             out.println("<th class='num'>Score</th>");
@@ -259,6 +276,35 @@ public class WebServer {
                 out.println("<tr>");
                 out.println("<td>" + solutionTimestamps.get(sol) + "</td>");
                 out.println("<td>" + sol + "</td>");
+                out.println("<td>");
+                out.println("<div class='histogram-container'>");
+                int[] histogram = solutionHistograms.get(sol);
+                int maxBucketCount = 0;
+                for (int count : histogram) {
+                    if (count > maxBucketCount) {
+                        maxBucketCount = count;
+                    }
+                }
+                for (int i = 0; i < 100; i++) {
+                    int bucketCount = histogram[i];
+                    int height = maxBucketCount > 0 ? (bucketCount * 26) / maxBucketCount : 0;
+                    if (bucketCount > 0 && height == 0) {
+                        height = 1;
+                    }
+                    String color = "";
+                    if (i >= 95) {
+                        color = "#6bcf7f"; // Green for high scores
+                    } else if (i >= 80) {
+                        color = "#ffd93d"; // Yellow for medium scores
+                    } else {
+                        color = "#ff6b6b"; // Red for low scores
+                    }
+                    out.println("<div class='histogram-bar' style='height: " + height
+                        + "px; background-color: " + color + "; width: 2px;' title='Score " + i
+                        + "-" + (i + 1) + ": " + bucketCount + " tests'></div>");
+                }
+                out.println("</div>");
+                out.println("</td>");
                 long avgTime = solutionAvgTimes.get(sol);
                 long maxTime = solutionMaxTimes.get(sol);
                 out.println("<td class='num'>" + avgTime + " ms"
@@ -274,6 +320,7 @@ public class WebServer {
                 out.println("<td class='num'>" + bestCount + "</td>");
                 int uniqueBestCount = solutionUniqueBestCounts.get(sol);
                 out.println("<td class='num'>" + uniqueBestCount + "</td>");
+
                 Map<String, Double> normMap = solutionNormalized.get(sol);
                 for (String test : allTestNames) {
                     double norm = normMap.getOrDefault(test, Double.NaN);
