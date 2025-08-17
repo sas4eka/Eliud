@@ -183,7 +183,7 @@ public class WebServer {
                                             (best > 0) ? (otherRec.rawScore / best) * 100 : 0;
                                     } else {
                                         if (otherRec.rawScore == 0) {
-                                            otherNorm = 100.0;
+                                            otherNorm = 0.0;
                                         } else {
                                             otherNorm =
                                                 (best > 0) ? (best / otherRec.rawScore) * 100 : 0;
