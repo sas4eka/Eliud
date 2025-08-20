@@ -268,7 +268,9 @@ public class WebServer {
                 if (displayTest.endsWith(".txt")) {
                     displayTest = displayTest.substring(0, displayTest.length() - 4);
                 }
-                out.println("<th class='num'>" + displayTest + "</th>");
+                double bestScore = bestScores.getOrDefault(test, 0.0);
+                String tooltip = " title='Best Score: " + String.format("%.2f", bestScore) + "'";
+                out.println("<th class='num'" + tooltip + ">" + displayTest + "</th>");
             }
             out.println("</tr></thead>");
             out.println("<tbody>");
